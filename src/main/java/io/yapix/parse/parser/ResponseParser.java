@@ -57,13 +57,12 @@ public class ResponseParser {
             PsiClass psiClass = PsiUtils.findPsiClass(this.project, this.module, types[0]);
             type = PsiTypesUtil.getClassType(psiClass);
             typeText = unwrappedType;
-        } else {
-            // 包装类处理
-            PsiClass returnClass = getWrapperPsiClass(method);
-            if (returnClass != null) {
-                type = PsiTypesUtil.getClassType(returnClass);
-                typeText = type.getCanonicalText() + "<" + returnType.getCanonicalText() + ">";
-            }
+        }
+        // 包装类处理
+        PsiClass returnClass = getWrapperPsiClass(method);
+        if (returnClass != null) {
+            type = PsiTypesUtil.getClassType(returnClass);
+            typeText = type.getCanonicalText() + "<" + typeText + ">";
         }
 
         // 解析
@@ -94,16 +93,34 @@ public class ResponseParser {
      * 返回需要需要的包装类
      */
     private PsiClass getWrapperPsiClass(PsiMethod method) {
-        if (StringUtils.isEmpty(settings.getReturnWrapType())) {
+        String returnWrapType = settings.getReturnWrapType();
+        if (StringUtils.isEmpty(returnWrapType)) {
             return null;
         }
-        PsiClass returnClass = PsiUtils.findPsiClass(this.project, this.module, settings.getReturnWrapType());
+        PsiType returnType = method.getReturnType();
+        if (Objects.equals(returnWrapType, "auto")) {
+            // TODO 改为配置Map映射：returnWrapTypes
+            String[] types = splitTypeAndGenericPair(returnType.getCanonicalText());
+            String theReturnType = types[0];
+            if (theReturnType.equals("com.yijiupi.himalaya.trading.apiservice.mall.results.BaseResult") ||
+                    theReturnType.equals("com.yijiupi.himalaya.trading.apiservice.mall.results.payment.apiresult.PaymentAPIResult") ||
+                    theReturnType.equals("com.yijiupi.himalaya.trading.apiservice.mall.results.payment.apiresult.PaymentResult")
+            ) {
+                return null;
+            } else if (theReturnType.equals("com.yijiupi.himalaya.base.search.PageList") ||
+                    theReturnType.equals("com.yijiupi.trd.framework.result.PageableResult")
+            ) {
+                returnWrapType = "com.yijiupi.himalaya.trading.apiservice.mall.results.MallPagerDataResult";
+            } else {
+                returnWrapType = "com.yijiupi.himalaya.trading.apiservice.mall.results.MallDataResult";
+            }
+        }
+        PsiClass returnClass = PsiUtils.findPsiClass(this.project, this.module, returnWrapType);
         if (returnClass == null) {
             return null;
         }
 
         // 是否是byte[]
-        PsiType returnType = method.getReturnType();
         if (PsiTypeUtils.isBytes(returnType)) {
             return null;
         }
