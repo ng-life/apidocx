@@ -5,10 +5,13 @@ import static org.apache.commons.lang3.StringUtils.trim;
 
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.project.Project;
+import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiAnnotation;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiEnumConstant;
+import com.intellij.psi.PsiExpression;
+import com.intellij.psi.PsiExpressionList;
 import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiParameter;
@@ -16,6 +19,7 @@ import com.intellij.psi.PsiType;
 import com.intellij.psi.javadoc.PsiDocComment;
 import com.intellij.psi.javadoc.PsiDocTag;
 import com.intellij.psi.javadoc.PsiDocToken;
+import com.intellij.psi.search.GlobalSearchScope;
 import io.yapix.model.Value;
 import io.yapix.parse.constant.DocumentTags;
 import io.yapix.parse.constant.JavaConstants;
@@ -29,8 +33,10 @@ import io.yapix.parse.util.StringUtilsExt;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * 解析辅助工具类
@@ -243,7 +249,60 @@ public class ParseHelper {
      * 获取字段可能的值
      */
     public List<Value> getFieldValues(PsiField field) {
+        PsiClass seeClass = getSeeClass(field);
+        if (seeClass != null) {
+            if (seeClass.isEnum()) {
+                List<Value> values = Arrays.stream(seeClass.getFields())
+                        .filter(item -> item instanceof PsiEnumConstant)
+                        .map(item -> {
+                            PsiExpressionList argumentList = ((PsiEnumConstant) item).getArgumentList();
+                            String name = item.getName();
+                            if (argumentList != null && argumentList.getExpressionCount() > 0) {
+                                name = argumentList.getText();
+                            }
+                            String description = PsiDocCommentUtils.getDocCommentTitle(item);
+                            if (StringUtils.trimToNull(description) == null) {
+                                description = item.getName();
+                            }
+                            return new Value(name, description);
+                        }).collect(Collectors.toList());
+
+                return values;
+            } else {
+                List<Value> values = Arrays.stream(seeClass.getAllFields()).map(item -> {
+                    String name = Optional.ofNullable(item.getInitializer()).map(PsiExpression::getText).orElse("null");
+                    String description = PsiDocCommentUtils.getDocCommentTitle(item);
+                    if (StringUtils.trimToNull(description) == null) {
+                        description = item.getName();
+                    }
+                    return new Value(name, description);
+                }).collect(Collectors.toList());
+                return values;
+            }
+        }
         return getTypeValues(field.getType());
+    }
+
+    @Nullable
+    private PsiClass getSeeClass(PsiField field) {
+        PsiDocComment docComment = field.getDocComment();
+        if (docComment == null) {
+            return null;
+        }
+        PsiDocTag seeTag = docComment.findTagByName("see");
+        if (seeTag == null) {
+            return null;
+        }
+        for (PsiElement dataElement : seeTag.getDataElements()) {
+            PsiElement reference = dataElement.getFirstChild();
+            if (reference != null && StringUtils.isNotEmpty(reference.getText())) {
+                PsiClass psiClass = JavaPsiFacade.getInstance(project).findClass(reference.getText(), GlobalSearchScope.allScope(project));
+                if (psiClass != null) {
+                    return (PsiClass) psiClass.getNavigationElement();
+                }
+            }
+        }
+        return null;
     }
 
     /**

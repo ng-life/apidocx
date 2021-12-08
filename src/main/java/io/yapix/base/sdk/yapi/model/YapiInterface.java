@@ -2,7 +2,11 @@ package io.yapix.base.sdk.yapi.model;
 
 import com.google.gson.annotations.SerializedName;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
+import java.util.StringJoiner;
 
 /**
  * 接口详细信息
@@ -342,4 +346,78 @@ public class YapiInterface implements Serializable {
     public void setDesc(String desc) {
         this.desc = desc;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        YapiInterface that = (YapiInterface) o;
+        return nullOrEquals(id, that.id) &&
+                nullOrEquals(projectId, that.projectId) &&
+                nullOrEquals(method, that.method) &&
+                nullOrEquals(path, that.path) &&
+                nullOrEquals(sortedList(reqParams), sortedList(that.reqParams)) &&
+                nullOrEquals(tag, that.tag) &&
+                nullOrEquals(token, that.token) &&
+                nullOrEquals(sortedList(reqQuery), sortedList(that.reqQuery)) &&
+                nullOrEquals(sortedList(reqHeaders), sortedList(that.reqHeaders)) &&
+                nullOrEquals(sortedList(reqBodyForm), sortedList(that.reqBodyForm)) &&
+                nullOrEquals(title, that.title) &&
+                nullOrEquals(reqBodyType, that.reqBodyType) &&
+                nullOrEquals(reqBodyOther, that.reqBodyOther) &&
+                nullOrEquals(status, that.status) &&
+                nullOrEquals(resBodyType, that.resBodyType) &&
+                nullOrEquals(resBody, that.resBody) &&
+                nullOrEquals(message, that.message) &&
+                nullOrEquals(desc, that.desc);
+    }
+
+    private List<YapiParameter> sortedList(List<YapiParameter> parameters) {
+        if (parameters == null) {
+            return null;
+        }
+        List<YapiParameter> yapiParameters = new ArrayList<>(parameters);
+        yapiParameters.sort(Comparator.comparing(YapiParameter::getName));
+        return yapiParameters;
+    }
+
+    private boolean nullOrEquals(Object a, Object b) {
+        return a == null || b == null || Objects.equals(a, b);
+    }
+
+    @Override
+    public String toString() {
+        return new StringJoiner(", ", YapiInterface.class.getSimpleName() + "[", "]")
+                .add("id=" + id)
+                .add("projectId=" + projectId)
+                .add("method='" + method + "'")
+                .add("path='" + path + "'")
+                .add("reqParams=" + sortedList(reqParams))
+                .add("menu='" + menu + "'")
+                .add("tag=" + tag)
+                .add("token='" + token + "'")
+                .add("reqQuery=" + sortedList(reqQuery))
+                .add("reqHeaders=" + sortedList(reqHeaders))
+                .add("reqBodyForm=" + sortedList(reqBodyForm))
+                .add("title='" + title + "'")
+                .add("catid='" + catid + "'")
+                .add("reqBodyType='" + reqBodyType + "'")
+                .add("reqBodyOther='" + reqBodyOther + "'")
+                .add("reqBodyIsJsonSchema=" + reqBodyIsJsonSchema)
+                .add("status='" + status + "'")
+                .add("resBodyType='" + resBodyType + "'")
+                .add("resBody='" + resBody + "'")
+                .add("resBodyIsJsonSchema=" + resBodyIsJsonSchema)
+                .add("editUid=" + editUid)
+                .add("username='" + username + "'")
+                .add("switchNotice=" + switchNotice)
+                .add("message='" + message + "'")
+                .add("desc='" + desc + "'")
+                .toString();
+    }
+
 }

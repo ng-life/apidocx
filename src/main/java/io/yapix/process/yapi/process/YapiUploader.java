@@ -8,11 +8,13 @@ import io.yapix.base.sdk.yapi.model.YapiCategory;
 import io.yapix.base.sdk.yapi.model.YapiCategoryAddRequest;
 import io.yapix.base.sdk.yapi.model.YapiInterface;
 import io.yapix.base.sdk.yapi.model.YapiListInterfaceResponse;
+import io.yapix.base.util.NotificationUtils;
 import io.yapix.model.Api;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
 
 /**
  * Yapi上传
@@ -21,6 +23,7 @@ public class YapiUploader {
 
     private final YapiClient client;
     private final Map<String, Integer> menuCatIdCache = new ConcurrentHashMap<>();
+    private final Logger logger = Logger.getLogger(YapiUploader.class.getName());
 
     public YapiUploader(YapiClient client) {
         this.client = client;
@@ -92,19 +95,32 @@ public class YapiUploader {
         YapiInterface originApi = findOldParamByTitle(api);
         if (originApi != null) {
             api.setId(originApi.getId());
+        } else {
+            // 新API直接上传
+            client.saveInterface(api);
+            return;
         }
-        client.saveInterface(api);
+
+        // 有差异的才上传
+        if (Objects.equals(originApi, api)) {
+            NotificationUtils.notifyWarning("API无变更，忽略（部分属性未对比，如果确实有调整，请微调注释以触发变更）：" + api.getPath());
+            logger.info("API无变化，不提交");
+        } else {
+            logger.info("API有差异：\n =>原API：" + originApi + "\n =>新API：" + api);
+            client.saveInterface(api);
+        }
+
     }
 
     public YapiInterface findOldParamByTitle(YapiInterface yapiInterface) {
         YapiListInterfaceResponse interfacesList = client.listInterfaceByCat(yapiInterface.getCatid(), 1, 1000);
         InterfaceVo originInterface = interfacesList.getList().stream()
-                .filter(o -> o.getTitle().equals(yapiInterface.getTitle()))
+                .filter(o -> Objects.equals(o.getPath(), yapiInterface.getPath()) && Objects
+                        .equals(o.getMethod(), yapiInterface.getMethod()))
                 .findFirst().orElse(null);
         if (originInterface == null) {
             originInterface = interfacesList.getList().stream()
-                    .filter(o -> Objects.equals(o.getPath(), yapiInterface.getPath()) && Objects
-                            .equals(o.getMethod(), yapiInterface.getMethod()))
+                    .filter(o -> o.getTitle().equals(yapiInterface.getTitle()))
                     .findFirst().orElse(null);
         }
         if (originInterface != null) {

@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -30,8 +31,15 @@ public class YapiDataConvector {
         yapi.setProjectId(projectId);
         yapi.setTitle(StringUtils.isNotEmpty(api.getSummary()) ? api.getSummary() : api.getPath());
         yapi.setPath(api.getPath());
+        String path = yapi.getPath();
+        if (path != null && path.contains(":.*")) {
+            yapi.setPath(path.replaceAll(":\\.\\*", ""));
+        }
         yapi.setMethod(api.getMethod().name());
         yapi.setDesc(api.getDescription());
+        if (BooleanUtils.isTrue(api.getDeprecated())) {
+            yapi.setDesc("[作废]" + yapi.getDesc());
+        }
         yapi.setMenu(api.getCategory());
         yapi.setStatus(YapiInterfaceStatus.undone.name());
         yapi.setReqHeaders(resolveParameter(api, ParameterIn.header));
@@ -70,6 +78,9 @@ public class YapiDataConvector {
             parameter.setName(p.getName());
             parameter.setType(p.getType());
             parameter.setDesc(p.getDescription());
+            if (BooleanUtils.isTrue(p.getDeprecated())) {
+                parameter.setDesc("[作废]" + parameter.getDesc());
+            }
             parameter.setExample(p.getExample());
             parameter.setRequired(p.getRequired() ? "1" : "0");
             parameter.setValue(p.getDefaultValue());
@@ -103,6 +114,9 @@ public class YapiDataConvector {
             parameter.setName(p.getName());
             parameter.setType("file".equals(p.getType()) ? "file" : "text");
             parameter.setDesc(p.getDescription());
+            if (BooleanUtils.isTrue(p.getDeprecated())) {
+                parameter.setDesc("[作废]" + parameter.getDesc());
+            }
             parameter.setRequired(p.getRequired() ? "1" : "0");
             parameter.setExample(p.getExample());
             if (StringUtils.isNotEmpty(p.getDefaultValue())) {
@@ -144,6 +158,10 @@ public class YapiDataConvector {
         YapiProperty yapiProperty = new YapiProperty();
         yapiProperty.setType(property.getType());
         yapiProperty.setDescription(property.getDescription());
+        if (BooleanUtils.isTrue(property.getDeprecated())) {
+            yapiProperty.setDescription("废弃：" + yapiProperty.getDescription());
+        }
+
         yapiProperty.setDefaultValue(property.getDefaultValue());
 
         if (StringUtils.isNotEmpty(property.getMock())) {

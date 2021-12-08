@@ -1,5 +1,6 @@
 ### Gradle template
 .gradle
+.idea
 **/build/
 !src/**/build/
 

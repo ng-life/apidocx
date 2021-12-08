@@ -1,7 +1,7 @@
 <idea-plugin>
-    <id>yapix</id>
-    <name>Yapi X</name>
-    <version>0.7.1</version>
+    <id>yapix-yjp</id>
+    <name>Yapi X - 易久批定制</name>
+    <version>0.7.2</version>
     <vendor url="https://github.com/jetplugins">Jetplugins</vendor>
 
     <description><![CDATA[

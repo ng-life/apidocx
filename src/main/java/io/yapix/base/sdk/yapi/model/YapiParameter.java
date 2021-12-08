@@ -1,5 +1,8 @@
 package io.yapix.base.sdk.yapi.model;
 
+import java.util.Objects;
+import java.util.StringJoiner;
+
 /**
  * 表单参数
  */
@@ -72,4 +75,42 @@ public class YapiParameter {
     public void setValue(String value) {
         this.value = value;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        YapiParameter that = (YapiParameter) o;
+        return Objects.equals(name, that.name) &&
+                nullOrEquals(type, that.type) &&
+                Objects.equals(desc, that.desc) &&
+                Objects.equals(example, that.example) &&
+                Objects.equals(value, that.value);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, type, desc, example, value);
+    }
+
+    @Override
+    public String toString() {
+        return new StringJoiner(", ", YapiParameter.class.getSimpleName() + "[", "]")
+                .add("name='" + name + "'")
+                .add("type='" + type + "'")
+                .add("desc='" + desc + "'")
+                .add("required='" + required + "'")
+                .add("example='" + example + "'")
+                .add("value='" + value + "'")
+                .toString();
+    }
+
+    private boolean nullOrEquals(Object a, Object b) {
+        return a == null || b == null || Objects.equals(a, b);
+    }
+
 }

@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.commons.collections.CollectionUtils;
 
@@ -86,10 +87,10 @@ public class PathParser {
     public static PathParseInfo parseRequestMappingAnnotation(PsiAnnotation annotation) {
         List<String> paths = getPaths(annotation);
         List<HttpMethod> methods = PsiAnnotationUtils.getStringArrayAttribute(annotation, "method").stream()
-                .map(HttpMethod::of).collect(Collectors.toList());
+                .filter(Objects::nonNull).map(HttpMethod::of).collect(Collectors.toList());
         if (methods.isEmpty()) {
             // 未指定方法，那么默认
-            methods.add(HttpMethod.GET);
+            methods.add(HttpMethod.POST);
         }
         PathParseInfo mapping = new PathParseInfo();
         mapping.setMethod(methods.get(0));

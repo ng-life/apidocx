@@ -144,6 +144,10 @@ public class KernelParser {
     @NotNull
     private Map<String, Property> doParseBean(String type, String genericTypes, PsiClass psiClass,
             Set<PsiClass> chains) {
+        PsiClass psiClassNav = (PsiClass) psiClass.getNavigationElement();
+        if (psiClassNav != null) {
+            psiClass = psiClassNav;
+        }
         // 防止循环引用
         HashSet<PsiClass> newChains = (chains != null) ? Sets.newHashSet(chains) : Sets.newHashSet();
         newChains.add(psiClass);
