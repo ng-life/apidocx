@@ -43,6 +43,9 @@ public class SerializableInspection extends LocalInspectionTool implements Seria
                     }
                     PsiElement psiElement = referenceElement.resolve();
                     PsiClass psiClass = (PsiClass) psiElement;
+                    if (psiClass == null) {
+                        return;
+                    }
                     String className = psiClass.getName();
                     if (className.endsWith("DTO") || className.endsWith("VO")) {
                         for (PsiClass classInterface : psiClass.getInterfaces()) {
