@@ -43,6 +43,9 @@
                          level="ERROR"
                          implementationClass="io.yapix.inspection.SerializableInspection"/>
 
+        <codeInsight.lineMarkerProvider language="JAVA"
+                                        implementationClass="io.yapix.linemarker.DubboReferenceLineMarkerProvider"/>
+
         <!-- Add your extensions here -->
         <applicationService serviceImplementation="io.yapix.config.YapixSettings"/>
         <applicationService serviceImplementation="io.yapix.process.yapi.config.YapiSettings"/>
