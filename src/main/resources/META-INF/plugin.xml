@@ -33,6 +33,16 @@
     <depends>com.intellij.modules.java</depends>
 
     <extensions defaultExtensionNs="com.intellij">
+
+        <localInspection language="JAVA"
+                         shortName="SerializableInspection"
+                         displayName="SerializableInspection"
+                         groupName="Serializable"
+                         groupPath="Java"
+                         enabledByDefault="true"
+                         level="ERROR"
+                         implementationClass="io.yapix.inspection.SerializableInspection"/>
+
         <!-- Add your extensions here -->
         <applicationService serviceImplementation="io.yapix.config.YapixSettings"/>
         <applicationService serviceImplementation="io.yapix.process.yapi.config.YapiSettings"/>
