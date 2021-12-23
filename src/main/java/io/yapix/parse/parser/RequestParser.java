@@ -270,8 +270,12 @@ public class RequestParser {
         return Arrays.stream(parameters)
                 .filter(p -> {
                     String type = p.getType().getCanonicalText();
+                    if (type.startsWith("org.springframework")) {
+                        return false;
+                    }
                     return !ignoreTypes.contains(type);
-                }).collect(Collectors.toList());
+                })
+                .collect(Collectors.toList());
     }
 
 

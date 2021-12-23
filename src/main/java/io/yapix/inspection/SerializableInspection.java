@@ -27,7 +27,13 @@ public class SerializableInspection extends LocalInspectionTool implements Seria
             public void visitElement(@NotNull PsiElement element) {
                 if (element instanceof PsiClass) {
                     PsiClass psiClass = (PsiClass) element;
+                    if (psiClass == null) {
+                        return;
+                    }
                     String className = psiClass.getName();
+                    if (className == null) {
+                        return;
+                    }
                     if (className.endsWith("DTO") || className.endsWith("VO")) {
                         for (PsiClass classInterface : psiClass.getInterfaces()) {
                             if (classInterface.getQualifiedName().equals(Serializable.class.getName())) {
@@ -47,6 +53,9 @@ public class SerializableInspection extends LocalInspectionTool implements Seria
                         return;
                     }
                     String className = psiClass.getName();
+                    if (className == null) {
+                        return;
+                    }
                     if (className.endsWith("DTO") || className.endsWith("VO")) {
                         for (PsiClass classInterface : psiClass.getInterfaces()) {
                             if (classInterface.getQualifiedName().equals(Serializable.class.getName())) {
