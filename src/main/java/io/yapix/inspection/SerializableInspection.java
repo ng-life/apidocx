@@ -10,6 +10,7 @@ import com.intellij.psi.PsiJavaCodeReferenceElement;
 import com.intellij.psi.PsiTypeElement;
 import com.siyeh.ig.fixes.DelegatingFixFactory;
 import java.io.Serializable;
+import java.util.Objects;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -35,10 +36,14 @@ public class SerializableInspection extends LocalInspectionTool implements Seria
                         return;
                     }
                     if (className.endsWith("DTO") || className.endsWith("VO")) {
-                        for (PsiClass classInterface : psiClass.getInterfaces()) {
-                            if (classInterface.getQualifiedName().equals(Serializable.class.getName())) {
-                                return;
+                        while (psiClass.getSuperClass() != null) {
+                            for (PsiClass classInterface : psiClass.getInterfaces()) {
+                                String interfaceQualifiedName = classInterface.getQualifiedName();
+                                if (Objects.equals(interfaceQualifiedName, Serializable.class.getName())) {
+                                    return;
+                                }
                             }
+                            psiClass = psiClass.getSuperClass();
                         }
                         holder.registerProblem(psiClass.getNameIdentifier(), "Should implements Serializable", ProblemHighlightType.ERROR, DelegatingFixFactory.createMakeSerializableFix(psiClass));
                     }
@@ -57,10 +62,14 @@ public class SerializableInspection extends LocalInspectionTool implements Seria
                         return;
                     }
                     if (className.endsWith("DTO") || className.endsWith("VO")) {
-                        for (PsiClass classInterface : psiClass.getInterfaces()) {
-                            if (classInterface.getQualifiedName().equals(Serializable.class.getName())) {
-                                return;
+                        while (psiClass.getSuperClass() != null) {
+                            for (PsiClass classInterface : psiClass.getInterfaces()) {
+                                String interfaceQualifiedName = classInterface.getQualifiedName();
+                                if (Objects.equals(interfaceQualifiedName, Serializable.class.getName())) {
+                                    return;
+                                }
                             }
+                            psiClass = psiClass.getSuperClass();
                         }
                         holder.registerProblem(element, "Type should implements Serializable", ProblemHighlightType.ERROR, DelegatingFixFactory.createMakeSerializableFix(psiClass));
                     }
