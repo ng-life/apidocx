@@ -1,10 +1,10 @@
 plugins {
-    id 'org.jetbrains.intellij' version '0.7.3'
+    id 'org.jetbrains.intellij' version '1.7.0'
     id 'java'
 }
 
 group 'com.github.jetplugins'
-version '0.7.2'
+version '0.9.7'
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 compileJava.options.encoding = "UTF-8"
@@ -15,16 +15,24 @@ repositories {
 }
 
 dependencies {
+    implementation 'io.swagger.core.v3:swagger-models:2.2.2'
+
+    // lombok
+    compileOnly 'org.projectlombok:lombok:1.18.24'
+    annotationProcessor 'org.projectlombok:lombok:1.18.24'
+    testCompileOnly 'org.projectlombok:lombok:1.18.24'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.24'
+
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
 }
 
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
-    version = '2019.3'
-    sandboxDirectory = "${project.rootDir}/.sandbox"
+    version = '2021.3'
+    sandboxDir = "${project.rootDir}/.sandbox"
     updateSinceUntilBuild = false
-    plugins = ['java']
+    plugins = ['java', 'properties']
 }
 
 test {

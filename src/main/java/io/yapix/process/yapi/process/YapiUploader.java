@@ -32,7 +32,7 @@ public class YapiUploader {
     public YapiInterface upload(Integer projectId, Api api) {
         YapiInterface data = YapiDataConvector.convert(projectId, api);
         Integer categoryId = getCatIdOrCreate(data.getProjectId(), data.getMenu());
-        data.setCatid(String.valueOf(categoryId));
+        data.setCatid(categoryId);
         addOrUpdate(data);
         return data;
     }
@@ -88,13 +88,14 @@ public class YapiUploader {
 
     /**
      * 创建或更新接口
-     * <p>
-     * 判断接口是否存在，不存在直接添加，存在检查接口状态完成不去更新，未完成则更新
      */
     private void addOrUpdate(YapiInterface api) {
-        YapiInterface originApi = findOldParamByTitle(api);
+        YapiInterface originApi = findInterface(api);
         if (originApi != null) {
             api.setId(originApi.getId());
+            if (!YapiInterfaceModifyJudge.isModify(originApi, api)) {
+                return;
+            }
         } else {
             // 新API直接上传
             client.saveInterface(api);
@@ -112,15 +113,24 @@ public class YapiUploader {
 
     }
 
-    public YapiInterface findOldParamByTitle(YapiInterface yapiInterface) {
+    private YapiInterface findInterface(YapiInterface yapiInterface) {
+        // 比较: title + path + method
         YapiListInterfaceResponse interfacesList = client.listInterfaceByCat(yapiInterface.getCatid(), 1, 1000);
         InterfaceVo originInterface = interfacesList.getList().stream()
-                .filter(o -> Objects.equals(o.getPath(), yapiInterface.getPath()) && Objects
-                        .equals(o.getMethod(), yapiInterface.getMethod()))
+                .filter(o -> Objects.equals(o.getTitle(), yapiInterface.getTitle())
+                        && Objects.equals(o.getPath(), yapiInterface.getPath())
+                        && Objects.equals(o.getMethod(), yapiInterface.getMethod()))
                 .findFirst().orElse(null);
+        // 比较: path + method
         if (originInterface == null) {
             originInterface = interfacesList.getList().stream()
                     .filter(o -> o.getTitle().equals(yapiInterface.getTitle()))
+                    .findFirst().orElse(null);
+        }
+        // 比较: title
+        if (originInterface == null) {
+            originInterface = interfacesList.getList().stream()
+                    .filter(o -> Objects.equals(o.getTitle(), yapiInterface.getTitle()))
                     .findFirst().orElse(null);
         }
         if (originInterface != null) {

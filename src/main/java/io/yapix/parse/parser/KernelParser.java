@@ -1,6 +1,8 @@
 package io.yapix.parse.parser;
 
+import static io.yapix.base.util.NotificationUtils.notifyWarning;
 import static io.yapix.parse.util.PsiGenericUtils.splitTypeAndGenericPair;
+import static java.lang.String.format;
 import static org.apache.commons.lang3.StringUtils.uncapitalize;
 
 import com.google.common.collect.Maps;
@@ -17,7 +19,9 @@ import io.yapix.config.BeanCustom;
 import io.yapix.config.YapixConfig;
 import io.yapix.model.DataTypes;
 import io.yapix.model.Property;
+import io.yapix.parse.constant.DocumentTags;
 import io.yapix.parse.constant.JavaConstants;
+import io.yapix.parse.util.PsiDocCommentUtils;
 import io.yapix.parse.util.PsiFieldUtils;
 import io.yapix.parse.util.PsiGenericUtils;
 import io.yapix.parse.util.PsiTypeUtils;
@@ -26,6 +30,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
@@ -117,6 +122,9 @@ public class KernelParser {
             Map<String, Property> properties = doParseBean(type, genericTypes, psiClass, chains);
             item.setProperties(properties);
         }
+
+        String mock = mockParser.parseMock(item, psiType, null, null);
+        item.setMock(mock);
         return item;
     }
 
@@ -143,7 +151,7 @@ public class KernelParser {
 
     @NotNull
     private Map<String, Property> doParseBean(String type, String genericTypes, PsiClass psiClass,
-            Set<PsiClass> chains) {
+                                              Set<PsiClass> chains) {
         PsiClass psiClassNav = (PsiClass) psiClass.getNavigationElement();
         if (psiClassNav != null) {
             psiClass = psiClassNav;
@@ -154,6 +162,28 @@ public class KernelParser {
         BeanCustom beanCustom = getBeanCustomSettings(type);
 
         Map<String, Property> properties = new LinkedHashMap<>();
+
+        // 针对接口/实体类, 检查是否存在@see引用
+        for (String typeName : PsiDocCommentUtils.getTagTextSet(psiClass, DocumentTags.See)) {
+            // 优先根据全限定名获取引用类, 其次根据非限定名(短名)获取.
+            // [note] 建议用户尽量使用全限定名, 短名容易出现重名冲突.
+            // 其实可以通过获取当前类的import作filter.
+            // 但既然用户使用javadoc, 就应该对输入作严格规范, 而非对插件输出作强要求.
+            PsiClass refPsiClass = Optional.ofNullable(PsiUtils.findPsiClass(project, module, typeName))
+                    .orElse(PsiUtils.findPsiClassByShortName(project, module, typeName));
+
+            // 引用类必须跟当前类存在派生关系(适用于接口和实体类)
+            if (refPsiClass == null || !refPsiClass.isInheritor(psiClass, true)) {
+                notifyWarning("Parse skipped", format("%s @see %s", type, typeName));
+                continue;
+            }
+
+            Optional.of(PsiTypesUtil.getClassType(refPsiClass))
+                    .map(it -> doParseType(it, it.getCanonicalText(), chains))
+                    .map(Property::getProperties)
+                    .ifPresent(properties::putAll);
+        }
+
         if (psiClass.isInterface()) {
             // 接口类型
             PsiMethod[] methods = PsiUtils.getGetterMethods(psiClass);
@@ -207,7 +237,7 @@ public class KernelParser {
                 }
                 fieldProperty.setValues(parseHelper.getFieldValues(field));
                 fieldProperty.setName(parseHelper.getFieldName(field));
-                fieldProperty.setDescription(parseHelper.getFieldDescription(field, fieldProperty.getValues()));
+                fieldProperty.setDescription(parseHelper.getFieldDescription(field, fieldProperty.getPropertyValues()));
                 fieldProperty.setDeprecated(parseHelper.getFieldDeprecated(field));
                 fieldProperty.setRequired(parseHelper.getFieldRequired(field));
                 fieldProperty.setMock(mockParser.parseMock(fieldProperty, fieldType, field, filedName));

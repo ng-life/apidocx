@@ -1,7 +1,6 @@
 <idea-plugin>
     <id>yapix-yjp</id>
     <name>Yapi X - 易久批定制</name>
-    <version>0.7.2</version>
     <vendor url="https://github.com/jetplugins">Jetplugins</vendor>
 
     <description><![CDATA[
@@ -21,16 +20,17 @@
             <li>Export to markdown.</li>
             <li>Copy as cURL.</li>
         </ul>
-        <img src="https://raw.githubusercontent.com/jetplugins/yapix/main/doc/screenshots.gif" height="360">
+        <img src="https://raw.githubusercontent.com/jetplugins/yapix/main/docs/screenshots.gif" height="360">
     ]]></description>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html for description -->
-    <idea-version since-build="182.5262.2"/>
+    <idea-version since-build="192.6262.58"/>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
          on how to target different products -->
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
+    <depends>com.intellij.properties</depends>
 
     <extensions defaultExtensionNs="com.intellij">
 
@@ -53,7 +53,7 @@
         <applicationService serviceImplementation="io.yapix.process.eolinker.config.EolinkerSettings"/>
         <applicationService serviceImplementation="io.yapix.process.showdoc.config.ShowdocSettings"/>
 
-        <applicationConfigurable parentId="tools" instance="io.yapix.config.YapixSettingsConfiguration">
+        <applicationConfigurable instance="io.yapix.config.YapixSettingsConfiguration">
             <configurable displayName="YApi" instance="io.yapix.process.yapi.config.YapiSettingsConfiguration"/>
             <configurable displayName="Rap2" instance="io.yapix.process.rap2.config.Rap2SettingsConfiguration"/>
             <configurable displayName="Eolinker"
@@ -61,6 +61,7 @@
             <configurable displayName="ShowDoc"
                 instance="io.yapix.process.showdoc.config.ShowdocSettingsConfiguration"/>
         </applicationConfigurable>
+        <fileTypeDetector implementation="io.yapix.config.YapixFileTypeDetector"/>
     </extensions>
 
     <actions>
@@ -69,7 +70,7 @@
             <add-to-group group-id="EditorLangPopupMenu" anchor="first"/>
             <keyboard-shortcut keymap="$default" first-keystroke="alt u"/>
         </action>
-        <group id="yapix.ActionGroup" text="Yapi X" popup="true">
+        <group id="yapix.YapixActionGroup" class="io.yapix.action.YapixActionGroup" text="Yapi X" popup="true">
             <add-to-group group-id="EditorLangPopupMenu" anchor="after" relative-to-action="yapix.YapixAction"/>
             <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
             <action id="yapix.YapiUploadAction" class="io.yapix.process.yapi.YapiUploadAction"/>
@@ -77,70 +78,39 @@
             <action id="yapix.EolinkerUploadAction" class="io.yapix.process.eolinker.EolinkerUploadAction"/>
             <action id="yapix.ShowdocUploadAction" class="io.yapix.process.showdoc.ShowdocUploadAction"/>
             <action id="yapix.ExportToMarkdownAction" class="io.yapix.process.markdown.ExportToMarkdownAction"/>
+            <action id="yapix.ExportToOpenApiAction" class="io.yapix.process.openapi.ExportToOpenApiAction"/>
             <action id="yapix.CopyAsCurlAction" class="io.yapix.process.curl.CopyAsCurlAction"/>
             <action id="yapix.CopyAsMarkdownAction" class="io.yapix.process.markdown.CopyAsMarkdownAction"/>
             <action id="yapix.OpenSettings" class="io.yapix.action.OpenSettingsAction" text="Open Settings"/>
         </group>
+        <action id="yapix.ConvertYapiXmlAction" class="io.yapix.action.ConvertYapiXmlAction" text="Convert to .yapix">
+            <add-to-group group-id="EditorLangPopupMenu" anchor="first"/>
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+        </action>
     </actions>
 
     <change-notes><![CDATA[
-      <p>0.7.2</p>
-      <ul>
-        <li>Fix http request timeout.</li>
-        <li>Fix unable parse when annotation @XxxMapping without any parameters.</li>
-        <li>Fix update eolinker default url.</li>
-        <li>Add quick open settings action.</li>
-      </ul>
-      <p>0.7.1</p>
-      <ul>
-        <li>Fix compatibility issues.</li>
-      </ul>
-      <p>0.7</p>
-      <ul>
-        <li>Add upload to showdoc.</li>
-        <li>Add export to markdown.</li>
-      </ul>
-      <p>0.6</p>
-      <ul>
-        <li>Supports @ignore tag.</li>
-        <li>Supports parse map type.</li>
-        <li>Add YApi supports LDAP login.</li>
-        <li>Add YApi supports token auth.</li>
-        <li>Add basic swagger annotations.</li>
-        <li>Optimize rap2 remove request body wrap root.</li>
-        <li>Fix copy as curl escape.</li>
-      </ul>
-      <p>0.0.5</p>
-      <ul>
-        <li>Optimize parse date.</li>
-        <li>Add supports default value.</li>
-        <li>Add supports multiple file.</li>
-        <li>Add supports annotation constants.</li>
-        <li>Fix yapi mock.</li>
-        <li>Fix others.</li>
-      </ul>
-      <p>0.0.4</p>
-      <ul>
-        <li>Add mock rules.</li>
-        <li>Add rap2 supports mock.</li>
-        <li>Fix bean field orders.</li>
-        <li>Fix yapi mock error.</li>
-        <li>Fix bugs.</li>
-      </ul>
-      <p>0.0.3</p>
-      <ul>
-        <li>Add Copy as cURL.</li>
-        <li>Add supports custom bean config.</li>
-        <li>Fix upload eolinker error.</li>
-        <li>Optimize right menu.</li>
-      </ul>
-      <p>0.0.2</p>
-      <ul>
-        <li>Generate API documents from Java source code.</li>
-        <li>Upload to YAPI platform.</li>
-        <li>Upload to RAP2 platform.</li>
-        <li>Upload to Eolinker platform.</li>
-      </ul>
+        0.9.7: <br>
+        - feat: 支持导出为OpenApi3.0<br>
+        - fix: 修复无法上传Eolinker问题<br>
+        <br>
+        0.9.6: <br>
+        - feat: 支持自定义@RequestBody注解<br>
+        - fix: 修复无法上传Eolinker问题<br>
+        - fix: 修复枚举类型列表文档无法解析<br>
+        - fix: 修复上传showdoc提示报错<br>
+        <br>
+        0.9.5: <br>
+        - fix: 修复插件兼容性，支持IDEA 2022.2<br>
+        - feat: 支持配置LocalDate, LocalTime时间类型格式<br>
+        <br>
+        0.9.4: <br>
+        - fix: 修复Controller注解无法识别问题<br>
+        <br>
+        0.9.3: <br>
+        - feat: 支持@JsonIgnore注解<br>
+        - feat: 支持组合自定义@Controller注解<br>
+        - fix: 修复@RequestMapping无法解析method参数<br>
       ]]></change-notes>
 
 </idea-plugin>
