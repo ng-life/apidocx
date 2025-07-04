@@ -23,4 +23,9 @@ public class ClassLevelApiInfo {
      */
     private String declareCategory;
 
+    /**
+     * 是否Dubbo
+     */
+    private boolean isDubboService;
+
 }

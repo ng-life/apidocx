@@ -10,6 +10,7 @@ import io.apidocx.parse.constant.WxbConstants;
 import io.apidocx.parse.model.PathInfo;
 import io.apidocx.parse.util.PathUtils;
 import io.apidocx.parse.util.PsiAnnotationUtils;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +58,13 @@ public class PathParser {
         if (pathInfo != null && CollectionUtils.isNotEmpty(pathInfo.getPaths())) {
             wxbPathHandle(method, pathInfo);
         }
+
+        if (pathInfo == null) {
+            pathInfo = new PathInfo();
+            pathInfo.setMethod(HttpMethod.POST);
+            pathInfo.setPaths(Collections.singletonList(method.getName()));
+        }
+
         return pathInfo;
     }
 

@@ -10,10 +10,13 @@ import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiModifier;
 import com.intellij.psi.PsiModifierList;
+import com.intellij.psi.javadoc.PsiDocTag;
 import com.intellij.psi.search.searches.SuperMethodsSearch;
 import com.intellij.psi.util.MethodSignatureBackedByPsiMethod;
 import io.apidocx.config.ApidocxConfig;
 import io.apidocx.model.Api;
+import io.apidocx.model.RequestBodyType;
+import io.apidocx.parse.constant.DubboConstants;
 import io.apidocx.parse.constant.SpringConstants;
 import io.apidocx.parse.model.ClassApiData;
 import io.apidocx.parse.model.ClassLevelApiInfo;
@@ -27,10 +30,14 @@ import io.apidocx.parse.parser.ResponseParser;
 import io.apidocx.parse.util.InternalUtils;
 import io.apidocx.parse.util.PathUtils;
 import io.apidocx.parse.util.PsiAnnotationUtils;
+import io.apidocx.parse.util.PsiDocCommentUtils;
 import io.apidocx.parse.util.PsiUtils;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -73,6 +80,7 @@ public class ApiParser {
                 .map(method -> doParseMethod(method, classLevelApiInfo))
                 .collect(Collectors.toList());
 
+
         data.setDeclaredCategory(classLevelApiInfo.getDeclareCategory());
         data.setMethodDataList(methodApiDataList);
         return data;
@@ -101,9 +109,20 @@ public class ApiParser {
     private ClassLevelApiInfo doParseClassLevelApiInfo(PsiClass psiClass) {
         ClassLevelApiInfo info = new ClassLevelApiInfo();
         PsiAnnotation annotation = PsiAnnotationUtils.getAnnotationIncludeExtends(psiClass, SpringConstants.RequestMapping);
+        PsiAnnotation dubboService = PsiAnnotationUtils.getAnnotationIncludeExtends(psiClass, DubboConstants.Service);
         if (annotation != null) {
             PathInfo path = PathParser.parseRequestMappingAnnotation(annotation);
             info.setPath(PathUtils.path(path.getPath()));
+        } else if (dubboService != null) {
+            info.setDubboService(true);
+            info.setPath("/dubbo-rpc/" + psiClass.getQualifiedName());
+            PsiDocTag pathTag = PsiDocCommentUtils.findTagByName(psiClass, "path");
+            if (pathTag != null && ArrayUtils.isNotEmpty(pathTag.getDataElements())) {
+                String path = pathTag.getDataElements()[0].getText();
+                if (path != null) {
+                    info.setPath(path);
+                }
+            }
         }
         info.setCategory(parseHelper.getDeclareApiCategory(psiClass));
         info.setDeclareCategory(info.getCategory());
@@ -133,7 +152,7 @@ public class ApiParser {
         }
 
         // 3.解析方法的参数和响应信息
-        Api methodApi = getMethodApi(method, pathInfo);
+        Api methodApi = getMethodApi(method, pathInfo, classLevelInfo);
         data.setDeclaredApiSummary(methodApi.getSummary());
 
         // 4.多路径处理
@@ -158,7 +177,7 @@ public class ApiParser {
     /**
      * 解析方法的通用信息，除请求路径、请求方法外.
      */
-    private Api getMethodApi(PsiMethod method, PathInfo path) {
+    private Api getMethodApi(PsiMethod method, PathInfo path, ClassLevelApiInfo classLevelInfo) {
         Api api = new Api();
         // 基本信息
         api.setMethod(path.getMethod());
@@ -167,7 +186,7 @@ public class ApiParser {
         api.setDeprecated(parseHelper.getApiDeprecated(method));
         api.setTags(parseHelper.getApiTags(method));
         // 请求信息
-        RequestInfo requestInfo = requestParser.parse(method, path.getMethod());
+        RequestInfo requestInfo = requestParser.parse(method, path.getMethod(), classLevelInfo);
         api.setParameters(requestInfo.getParameters());
         api.setRequestBodyType(requestInfo.getRequestBodyType());
         api.setRequestBody(requestInfo.getRequestBody());
@@ -184,7 +203,8 @@ public class ApiParser {
         // 接口是为了满足接口继承的情况
         boolean isController = psiClass.isInterface()
                 || PsiAnnotationUtils.getAnnotation(psiClass, SpringConstants.RestController) != null
-                || PsiAnnotationUtils.getAnnotation(psiClass, SpringConstants.Controller) != null;
+                || PsiAnnotationUtils.getAnnotation(psiClass, SpringConstants.Controller) != null
+                || PsiAnnotationUtils.getAnnotation(psiClass, DubboConstants.Service) != null;
         if (isController) {
             return true;
         }
@@ -197,7 +217,8 @@ public class ApiParser {
                 continue;
             }
             isController = PsiAnnotationUtils.getAnnotation(thePsiClass, SpringConstants.RestController) != null
-                    || PsiAnnotationUtils.getAnnotation(thePsiClass, SpringConstants.Controller) != null;
+                    || PsiAnnotationUtils.getAnnotation(thePsiClass, SpringConstants.Controller) != null
+                    || PsiAnnotationUtils.getAnnotation(psiClass, DubboConstants.Service) != null;
             if (isController) {
                 break;
             }

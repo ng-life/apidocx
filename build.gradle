@@ -4,10 +4,10 @@ plugins {
 }
 
 group 'com.github.jetplugins'
-version '1.1.10'
+version '1.1.10-yjp'
 
-java.sourceCompatibility = 1.8
-java.targetCompatibility = 1.8
+java.sourceCompatibility = 17
+java.targetCompatibility = 17
 compileJava.options.encoding = "UTF-8"
 compileTestJava.options.encoding = "UTF-8"
 

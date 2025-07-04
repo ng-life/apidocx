@@ -22,6 +22,7 @@ import io.apidocx.model.ParameterIn;
 import io.apidocx.model.Property;
 import io.apidocx.model.RequestBodyType;
 import io.apidocx.parse.constant.SpringConstants;
+import io.apidocx.parse.model.ClassLevelApiInfo;
 import io.apidocx.parse.model.Jsr303Info;
 import io.apidocx.parse.model.RequestInfo;
 import io.apidocx.parse.model.TypeParseContext;
@@ -46,7 +47,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * 请求信息解析
  *
- * @see #parse(PsiMethod, HttpMethod)
+ * @see #parse(PsiMethod, HttpMethod, ClassLevelApiInfo)
  */
 public class RequestParser {
 
@@ -65,15 +66,16 @@ public class RequestParser {
     /**
      * 解析请求参数信息
      *
-     * @param method     待处理的方法
-     * @param httpMethod 当前方法的http请求方法
+     * @param method         待处理的方法
+     * @param httpMethod     当前方法的http请求方法
+     * @param classLevelInfo
      */
-    public RequestInfo parse(PsiMethod method, HttpMethod httpMethod) {
+    public RequestInfo parse(PsiMethod method, HttpMethod httpMethod, ClassLevelApiInfo classLevelInfo) {
         List<PsiParameter> parameters = filterMethodParameters(method);
         // 解析参数: 请求体类型，普通参数，请求体
-        List<Property> requestParameters = getRequestParameters(method, parameters);
-        RequestBodyType requestBodyType = getRequestBodyType(parameters, httpMethod);
-        List<Property> requestBody = getRequestBody(method, parameters, httpMethod, requestParameters);
+        List<Property> requestParameters = getRequestParameters(method, parameters, classLevelInfo);
+        RequestBodyType requestBodyType = getRequestBodyType(parameters, httpMethod, classLevelInfo);
+        List<Property> requestBody = getRequestBody(method, parameters, httpMethod, requestParameters, classLevelInfo);
 
         RequestInfo request = new RequestInfo();
         request.setParameters(requestParameters);
@@ -82,7 +84,7 @@ public class RequestParser {
         if (requestBodyType != null && requestBodyType.isFormOrFormData()) {
             request.setRequestBodyForm(requestBody);
         } else if (!requestBody.isEmpty()) {
-            request.setRequestBody(requestBody.get(0));
+                request.setRequestBody(requestBody.get(0));
         }
         return request;
     }
@@ -90,7 +92,10 @@ public class RequestParser {
     /**
      * 解析普通参数
      */
-    public List<Property> getRequestParameters(PsiMethod method, List<PsiParameter> parameterList) {
+    public List<Property> getRequestParameters(PsiMethod method, List<PsiParameter> parameterList, ClassLevelApiInfo classLevelInfo) {
+        if (classLevelInfo.isDubboService()) {
+            return Collections.emptyList();
+        }
         List<PsiParameter> parameters = filterRequestParameters(parameterList);
 
         return parameters.stream().flatMap(p -> {
@@ -105,10 +110,15 @@ public class RequestParser {
     /**
      * 解析请求方式
      */
-    private RequestBodyType getRequestBodyType(List<PsiParameter> parameters, HttpMethod method) {
+    private RequestBodyType getRequestBodyType(List<PsiParameter> parameters, HttpMethod method, ClassLevelApiInfo classLevelInfo) {
         if (!method.isAllowBody()) {
             return null;
         }
+
+        if (classLevelInfo.isDubboService()) {
+            return RequestBodyType.json;
+        }
+
         boolean requestBody = parameters.stream().anyMatch(p -> p.getAnnotation(RequestBody) != null);
         if (requestBody) {
             return RequestBodyType.json;
@@ -129,12 +139,25 @@ public class RequestParser {
      * 解析请求体内容
      */
     private List<Property> getRequestBody(PsiMethod method, List<PsiParameter> methodParameters, HttpMethod httpMethod,
-                                          List<Property> requestParameters) {
+                                          List<Property> requestParameters, ClassLevelApiInfo classLevelInfo) {
         if (!httpMethod.isAllowBody()) {
             return Lists.newArrayList();
         }
         Map<String, String> paramTags = PsiDocCommentUtils.getTagParamTextMap(method);
         Property bodyProperty = null;
+
+        if (classLevelInfo.isDubboService()) {
+            List<Property> dubboParams = Lists.newArrayList();
+            for (PsiParameter methodParameter : methodParameters) {
+                Property property = kernelParser.parse(methodParameter.getType());
+                String description = paramTags.get(methodParameter.getName());
+                if (StringUtils.isNotEmpty(description)) {
+                    property.setDescription(description);
+                }
+                dubboParams.add(property);
+            }
+            return dubboParams;
+        }
 
         // JSON: 解析@RequestBody注解参数、自定义@RequestBody注解参数
         PsiParameter bodyParameter = methodParameters.stream()

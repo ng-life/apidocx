@@ -161,14 +161,16 @@ public class YapiClient {
      * 计算类别地址
      */
     public String calculateCatUrl(Integer projectId, Integer catId) {
-        return format("%s/project/%d/interface/api/cat_%s", url, projectId, catId);
+        String baseUrl = StringUtils.removeEnd(this.url, "/");
+        return format("%s/project/%d/interface/api/cat_%s", baseUrl, projectId, catId);
     }
 
     /**
      * 计算接口访问地址
      */
     public String calculateInterfaceUrl(Integer projectId, Integer id) {
-        return format("%s/project/%d/interface/api/%d", url, projectId, id);
+        String baseUrl = StringUtils.removeEnd(this.url, "/");
+        return format("%s/project/%d/interface/api/%d", baseUrl, projectId, id);
     }
 
     private YapiApi createYapiApi(String url) {
