@@ -83,6 +83,7 @@ public class OpenApiDataConvert {
     private Operation buildOperation(Api api) {
         Operation operation = new Operation();
         operation.setSummary(api.getSummary());
+        operation.setDescription(api.getDescription());
         operation.setTags(Lists.newArrayList(api.getCategory()));
         operation.setParameters(buildParameters(api));
         operation.setRequestBody(buildRequestBody(api));
@@ -105,6 +106,7 @@ public class OpenApiDataConvert {
 
             Schema<?> schema = new Schema<>();
             schema.setType(p.getType());
+            schema.setFormat(p.getFormat());
             if (p.isArrayType()) {
                 schema.setMinItems(p.getMinLength());
                 schema.setMaxItems(p.getMaxLength());
@@ -171,6 +173,7 @@ public class OpenApiDataConvert {
     private Schema<?> buildSchema(Property p) {
         Schema<?> schema = new Schema<>();
         schema.setType(p.getType());
+        schema.setFormat(p.getFormat());
         schema.setDescription(p.getDescription());
         schema.setExample(p.getExample());
         schema.setDefault(p.getDefaultValue());
@@ -191,13 +194,8 @@ public class OpenApiDataConvert {
 
         // 特殊类型转换
         switch (p.getType()) {
-            case "datetime":
-                schema.setType("string");
-                schema.setFormat("date-time");
-                break;
             case "file":
                 schema.setType("string");
-                schema.setFormat("binary");
                 break;
         }
 

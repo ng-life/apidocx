@@ -15,4 +15,22 @@ public interface JavaConstants {
     String Negative = "javax.validation.constraints.Negative";
     String NegativeOrZero = "javax.validation.constraints.NegativeOrZero";
 
+    //----------------------jakarta.validation.constraints.*-------------------------//
+    String NotNull2 = "jakarta.validation.constraints.NotNull";
+    String NotEmpty2 = "jakarta.validation.constraints.NotEmpty";
+    String NotBlank2 = "jakarta.validation.constraints.NotBlank";
+    String Size2 = "jakarta.validation.constraints.Size";
+    String Min2 = "jakarta.validation.constraints.Min";
+    String Max2 = "jakarta.validation.constraints.Max";
+    String DecimalMin2 = "jakarta.validation.constraints.DecimalMin";
+    String DecimalMax2 = "jakarta.validation.constraints.DecimalMax";
+    String Positive2 = "jakarta.validation.constraints.Positive";
+    String PositiveOrZero2 = "jakarta.validation.constraints.PositiveOrZero";
+    String Negative2 = "jakarta.validation.constraints.Negative";
+    String NegativeOrZero2 = "jakarta.validation.constraints.NegativeOrZero";
+
+    //----------------------org.hibernate.validator.constraints.*-------------------------//
+    String NotEmpty3 = "org.hibernate.validator.constraints.NotEmpty";
+    String NotBlank3 = "org.hibernate.validator.constraints.NotBlank";
+
 }

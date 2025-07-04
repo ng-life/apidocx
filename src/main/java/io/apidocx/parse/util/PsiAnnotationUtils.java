@@ -11,11 +11,13 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiEnumConstant;
 import com.intellij.psi.PsiExpression;
 import com.intellij.psi.PsiField;
+import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiModifierListOwner;
 import com.intellij.psi.PsiReference;
 import com.intellij.psi.PsiTypeElement;
 import com.intellij.psi.impl.JavaConstantExpressionEvaluator;
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -32,6 +34,26 @@ public class PsiAnnotationUtils {
      */
     public static PsiAnnotation getAnnotation(PsiModifierListOwner element, String fqn) {
         return element.getAnnotation(fqn);
+    }
+
+    /**
+     * 获取指定注解
+     */
+    public static PsiAnnotation[] getAnnotations(PsiModifierListOwner element, String fqn) {
+        return Arrays.stream(element.getAnnotations()).filter(annotation -> fqn.equals(annotation.getQualifiedName())).toArray(PsiAnnotation[]::new);
+    }
+
+    /**
+     * 获取指定注解
+     */
+    public static PsiAnnotation getAnnotation(PsiModifierListOwner element, String... fqnWaits) {
+        for (String fqn : fqnWaits) {
+            PsiAnnotation annotation = element.getAnnotation(fqn);
+            if (annotation != null) {
+                return annotation;
+            }
+        }
+        return null;
     }
 
     /**
@@ -171,6 +193,32 @@ public class PsiAnnotationUtils {
             return new BigDecimal(value);
         } catch (NumberFormatException e) {
             // ignored
+        }
+        return null;
+    }
+
+
+    /**
+     * 获取字段注解值
+     */
+    public static PsiAnnotation getFieldAnnotation(PsiField psiField, String fqn, boolean includeGetterMethod) {
+        PsiAnnotation annotation = PsiAnnotationUtils.getAnnotation(psiField, fqn);
+        if (annotation == null && includeGetterMethod) {
+            PsiMethod getterMethod = PsiFieldUtils.getGetterMethod(psiField);
+            if (getterMethod != null) {
+                annotation = PsiAnnotationUtils.getAnnotation(getterMethod, fqn);
+            }
+        }
+        return annotation;
+    }
+
+    /**
+     * 获取字段指定注解value属性值
+     */
+    public static String getFieldAnnotationStringAttributeValue(PsiField psiField, String fqn, String attribute, boolean includeGetterMethod) {
+        PsiAnnotation annotation = getFieldAnnotation(psiField, fqn, includeGetterMethod);
+        if (annotation != null) {
+            return getStringAttributeValueByAnnotation(annotation, attribute);
         }
         return null;
     }

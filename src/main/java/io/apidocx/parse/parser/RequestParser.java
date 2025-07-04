@@ -179,6 +179,7 @@ public class RequestParser {
         for (PsiParameter p : fileParameters) {
             Property item = kernelParser.parse(p.getType());
             item.setType(DataTypes.FILE);
+            item.setFormat("binary");
             item.setName(p.getName());
             item.setRequired(true);
             item.setDescription(paramTags.get(p.getName()));
@@ -278,7 +279,7 @@ public class RequestParser {
             required = parseHelper.getParameterRequired(parameter);
         }
         Map<String, String> paramTags = PsiDocCommentUtils.getTagParamTextMap(method);
-        String description = parseHelper.getParameterDescription(parameter, paramTags, property.getPropertyValues());
+        String description = parseHelper.getParameterDescription(method, parameter, paramTags, property.getPropertyValues());
         property.setIn(in);
         property.setName(name);
         property.setDescription(description);

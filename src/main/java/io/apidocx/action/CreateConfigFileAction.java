@@ -4,11 +4,13 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationAction;
+import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.project.Project;
 import io.apidocx.base.util.FileUtilsExt;
 import io.apidocx.base.util.NotificationUtils;
+import io.apidocx.base.util.PsiModuleUtils;
 import io.apidocx.config.DefaultConstants;
 import java.io.File;
 import java.io.IOException;
@@ -36,7 +38,8 @@ public class CreateConfigFileAction extends NotificationAction {
     @Override
     public void actionPerformed(@NotNull AnActionEvent event, @NotNull Notification notification) {
         // 参数校验
-        File moduleRoot = new File(module.getModuleFilePath()).getParentFile();
+        String modulePath = PsiModuleUtils.getModulePath(module);
+        File moduleRoot = new File(modulePath).getParentFile();
         File file = Paths.get(moduleRoot.getPath(), DefaultConstants.FILE_NAME).toFile();
         try {
             String content = FileUtilsExt.readTextInResource(TEMPLATE_FILE);
@@ -44,5 +47,11 @@ public class CreateConfigFileAction extends NotificationAction {
         } catch (IOException ex) {
             NotificationUtils.notifyError("Create config file error: " + ex.getMessage());
         }
+    }
+
+    @Override
+    @NotNull
+    public ActionUpdateThread getActionUpdateThread() {
+        return ActionUpdateThread.EDT;
     }
 }

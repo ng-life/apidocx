@@ -17,7 +17,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
-import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 
 public class ApifoxDataConvector {
 
@@ -29,6 +29,7 @@ public class ApifoxDataConvector {
         apiDetail.setPath(api.getPath());
         apiDetail.setType("http");
         apiDetail.setStatus("released");
+        apiDetail.setDescription(api.getDescription());
         apiDetail.setParameters(getRequestParameters(api));
         apiDetail.setRequestBody(getRequestBody(api));
         apiDetail.setResponses(getResponses(api));
@@ -89,6 +90,7 @@ public class ApifoxDataConvector {
         parameter.setId(RandomStringUtils.randomAlphabetic(10));
         parameter.setName(property.getName());
         parameter.setType(property.getType());
+        parameter.setFormat(property.getFormat());
         parameter.setDescription(property.getDescription());
         parameter.setRequired(property.getRequired());
         parameter.setExample(property.getExample());
@@ -98,6 +100,7 @@ public class ApifoxDataConvector {
     private Schema buildSchema(Property p) {
         Schema schema = new Schema();
         schema.setType(p.getType());
+        schema.setFormat(p.getFormat());
         schema.setDescription(p.getDescription());
         schema.setExample(p.getExample());
         String mock = p.getMock();
@@ -121,13 +124,8 @@ public class ApifoxDataConvector {
 
         // 特殊类型转换
         switch (p.getType()) {
-            case "datetime":
-                schema.setType("string");
-                schema.setFormat("date-time");
-                break;
             case "file":
                 schema.setType("string");
-                schema.setFormat("binary");
                 break;
         }
 

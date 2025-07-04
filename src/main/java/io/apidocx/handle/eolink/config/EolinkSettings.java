@@ -1,7 +1,7 @@
 package io.apidocx.handle.eolink.config;
 
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.PersistentStateComponent;
-import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;
 import com.intellij.util.xmlb.XmlSerializerUtil;
@@ -25,11 +25,6 @@ import org.jetbrains.annotations.Nullable;
 public class EolinkSettings implements PersistentStateComponent<EolinkSettings> {
 
     private static final String PASSWORD_KEY = "eolinker";
-
-    /**
-     * 登录地址
-     */
-    private String loginUrl;
 
     /**
      * 服务页面地址
@@ -59,7 +54,7 @@ public class EolinkSettings implements PersistentStateComponent<EolinkSettings> 
 
 
     public static EolinkSettings getInstance() {
-        EolinkSettings settings = ServiceManager.getService(EolinkSettings.class);
+        EolinkSettings settings = ApplicationManager.getApplication().getService(EolinkSettings.class);
         settings.password = PasswordSafeUtils.getPassword(PASSWORD_KEY, settings.account);
         return settings;
     }
@@ -88,14 +83,13 @@ public class EolinkSettings implements PersistentStateComponent<EolinkSettings> 
     public boolean isValidate() {
         return StringUtils.isNotEmpty(url)
                 && StringUtils.isNotEmpty(webUrl)
-                && StringUtils.isNotEmpty(loginUrl)
                 && StringUtils.isNotEmpty(account) && StringUtils.isNotEmpty(password);
     }
 
     public TestResult testSettings() {
         EolinkSettings settings = this;
         // 测试账户
-        EolinkClient client = new EolinkClient(settings.getUrl(), settings.loginUrl, settings.getAccount(),
+        EolinkClient client = new EolinkClient(settings.getUrl(), settings.getAccount(),
                 settings.getPassword(), settings.getAccessToken());
         TestResult testResult = client.test();
         Code code = testResult.getCode();
@@ -122,9 +116,6 @@ public class EolinkSettings implements PersistentStateComponent<EolinkSettings> 
         if (webUrl != null ? !webUrl.equals(that.webUrl) : that.webUrl != null) {
             return false;
         }
-        if (loginUrl != null ? !loginUrl.equals(that.loginUrl) : that.loginUrl != null) {
-            return false;
-        }
         if (account != null ? !account.equals(that.account) : that.account != null) {
             return false;
         }
@@ -134,7 +125,6 @@ public class EolinkSettings implements PersistentStateComponent<EolinkSettings> 
     @Override
     public int hashCode() {
         int result = url != null ? url.hashCode() : 0;
-        result = 31 * result + (loginUrl != null ? loginUrl.hashCode() : 0);
         result = 31 * result + (webUrl != null ? webUrl.hashCode() : 0);
         result = 31 * result + (account != null ? account.hashCode() : 0);
         result = 31 * result + (password != null ? password.hashCode() : 0);

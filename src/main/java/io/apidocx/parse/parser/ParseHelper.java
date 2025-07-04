@@ -128,12 +128,7 @@ public class ParseHelper {
      * 获取接口描述
      */
     public String getApiDescription(PsiMethod psiMethod) {
-        String description = psiMethod.getText();
-        if (psiMethod.getBody() != null) {
-            description = description.replace(psiMethod.getBody().getText(), "");
-        }
-        description = description.replace("<", "&lt;").replace(">", "&gt;");
-        return "   <pre><code>    " + description + "</code></pre>";
+        return PsiDocCommentUtils.getDocCommentDescription(psiMethod);
     }
 
     /**
@@ -166,10 +161,10 @@ public class ParseHelper {
     /**
      * 获取参数描述
      */
-    public String getParameterDescription(PsiParameter parameter, Map<String, String> paramTagMap,
+    public String getParameterDescription(PsiMethod method, PsiParameter parameter, Map<String, String> paramTagMap,
                                           List<Value> values) {
         // @ApiParam > @param
-        String summary = PsiSwaggerUtils.getParameterDescription(parameter);
+        String summary = PsiSwaggerUtils.getParameterDescription(method, parameter);
         if (StringUtils.isEmpty(summary)) {
             summary = paramTagMap.get(parameter.getName());
         }
@@ -188,14 +183,11 @@ public class ParseHelper {
      * 获取参数是否必填
      */
     public Boolean getParameterRequired(PsiParameter parameter) {
-        String[] annotations = {JavaConstants.NotNull, JavaConstants.NotBlank, JavaConstants.NotEmpty};
-        for (String annotation : annotations) {
-            PsiAnnotation target = PsiAnnotationUtils.getAnnotation(parameter, annotation);
-            if (target != null) {
-                return true;
-            }
-        }
-        return null;
+        String[] annotations = {JavaConstants.NotNull, JavaConstants.NotBlank, JavaConstants.NotEmpty,
+                JavaConstants.NotNull2, JavaConstants.NotBlank2, JavaConstants.NotEmpty2,
+                JavaConstants.NotBlank3, JavaConstants.NotEmpty3};
+        PsiAnnotation annotation = PsiAnnotationUtils.getAnnotation(parameter, annotations);
+        return Objects.nonNull(annotation);
     }
 
     /**
@@ -268,8 +260,16 @@ public class ParseHelper {
      * 字段是否必填
      */
     public boolean getFieldRequired(TypeParseContext context, PsiField field) {
+
+        // swagger ->  validate
+        if (PsiSwaggerUtils.isFieldRequired(field)) {
+            return true;
+        }
+        
         List<String> validateGroups = context.getJsr303ValidateGroups();
-        String[] annotations = {JavaConstants.NotNull, JavaConstants.NotBlank, JavaConstants.NotEmpty};
+        String[] annotations = {JavaConstants.NotNull, JavaConstants.NotBlank, JavaConstants.NotEmpty,
+                JavaConstants.NotNull2, JavaConstants.NotBlank2, JavaConstants.NotEmpty2,
+                JavaConstants.NotBlank3, JavaConstants.NotEmpty3};
         for (String annotation : annotations) {
             PsiAnnotation target = PsiAnnotationUtils.getAnnotation(field, annotation);
             if (target == null) {
@@ -455,7 +455,7 @@ public class ParseHelper {
             return true;
         }
 
-        String jsonIgnore = PsiAnnotationUtils.getStringAttributeValue(field, SpringConstants.JsonIgnore);
+        String jsonIgnore = PsiAnnotationUtils.getFieldAnnotationStringAttributeValue(field, SpringConstants.JsonIgnore, "value", true);
         if ("true".equals(jsonIgnore)) {
             return true;
         }
@@ -522,7 +522,7 @@ public class ParseHelper {
     public Jsr303Info getJsr303Info(PsiModifierListOwner element) {
         Jsr303Info data = new Jsr303Info();
         // @Size
-        PsiAnnotation sizeAnnotation = PsiAnnotationUtils.getAnnotation(element, JavaConstants.Size);
+        PsiAnnotation sizeAnnotation = PsiAnnotationUtils.getAnnotation(element, JavaConstants.Size, JavaConstants.Size2);
         if (sizeAnnotation != null) {
             Integer minSize = PsiAnnotationUtils.getIntegerAttributeValueByAnnotation(sizeAnnotation, "min");
             Integer maxSize = PsiAnnotationUtils.getIntegerAttributeValueByAnnotation(sizeAnnotation, "max");
@@ -532,19 +532,19 @@ public class ParseHelper {
 
         // @Min, @DecimalMin, @Positive, @PositiveOrZero
         BigDecimal minValue = null, decimalMinValue = null, positiveValue = null, positiveOrZeroValue = null;
-        PsiAnnotation minAnnotation = PsiAnnotationUtils.getAnnotation(element, JavaConstants.Min);
+        PsiAnnotation minAnnotation = PsiAnnotationUtils.getAnnotation(element, JavaConstants.Min, JavaConstants.Min2);
         if (minAnnotation != null) {
             minValue = PsiAnnotationUtils.getBigDecimalAttributeValueByAnnotation(minAnnotation, "value");
         }
-        PsiAnnotation decimalMinAnnotation = PsiAnnotationUtils.getAnnotation(element, JavaConstants.DecimalMin);
+        PsiAnnotation decimalMinAnnotation = PsiAnnotationUtils.getAnnotation(element, JavaConstants.DecimalMin, JavaConstants.DecimalMin2);
         if (decimalMinAnnotation != null) {
             decimalMinValue = PsiAnnotationUtils.getBigDecimalAttributeValueByAnnotation(decimalMinAnnotation, "value");
         }
-        PsiAnnotation positiveAnnotation = PsiAnnotationUtils.getAnnotation(element, JavaConstants.Positive);
+        PsiAnnotation positiveAnnotation = PsiAnnotationUtils.getAnnotation(element, JavaConstants.Positive, JavaConstants.Positive2);
         if (positiveAnnotation != null) {
             positiveValue = BigDecimal.ZERO;
         }
-        PsiAnnotation positiveOrZeroAnnotation = PsiAnnotationUtils.getAnnotation(element, JavaConstants.PositiveOrZero);
+        PsiAnnotation positiveOrZeroAnnotation = PsiAnnotationUtils.getAnnotation(element, JavaConstants.PositiveOrZero, JavaConstants.PositiveOrZero2);
         if (positiveOrZeroAnnotation != null) {
             positiveOrZeroValue = BigDecimal.ZERO;
         }
@@ -556,19 +556,19 @@ public class ParseHelper {
 
         // @Max, @DecimalMax, @Negative, @NegativeOrZero
         BigDecimal maxValue = null, decimalMaxValue = null, negativeValue = null, negativeOrZeroValue = null;
-        PsiAnnotation maxAnnotation = PsiAnnotationUtils.getAnnotation(element, JavaConstants.Max);
+        PsiAnnotation maxAnnotation = PsiAnnotationUtils.getAnnotation(element, JavaConstants.Max, JavaConstants.Max2);
         if (maxAnnotation != null) {
             maxValue = PsiAnnotationUtils.getBigDecimalAttributeValueByAnnotation(maxAnnotation, "value");
         }
-        PsiAnnotation decimalMaxAnnotation = PsiAnnotationUtils.getAnnotation(element, JavaConstants.DecimalMax);
+        PsiAnnotation decimalMaxAnnotation = PsiAnnotationUtils.getAnnotation(element, JavaConstants.DecimalMax, JavaConstants.DecimalMax2);
         if (decimalMaxAnnotation != null) {
             decimalMaxValue = PsiAnnotationUtils.getBigDecimalAttributeValueByAnnotation(decimalMaxAnnotation, "value");
         }
-        PsiAnnotation negativeAnnotation = PsiAnnotationUtils.getAnnotation(element, JavaConstants.Negative);
+        PsiAnnotation negativeAnnotation = PsiAnnotationUtils.getAnnotation(element, JavaConstants.Negative, JavaConstants.Negative2);
         if (negativeAnnotation != null) {
             negativeValue = BigDecimal.ZERO;
         }
-        PsiAnnotation negativeOrZeroAnnotation = PsiAnnotationUtils.getAnnotation(element, JavaConstants.NegativeOrZero);
+        PsiAnnotation negativeOrZeroAnnotation = PsiAnnotationUtils.getAnnotation(element, JavaConstants.NegativeOrZero, JavaConstants.NegativeOrZero2);
         if (negativeOrZeroAnnotation != null) {
             negativeOrZeroValue = BigDecimal.ZERO;
         }

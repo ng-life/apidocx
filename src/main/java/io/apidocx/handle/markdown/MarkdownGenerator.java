@@ -1,6 +1,7 @@
 package io.apidocx.handle.markdown;
 
 import com.google.common.collect.Lists;
+import io.apidocx.base.util.PropertyUtils;
 import io.apidocx.model.Api;
 import io.apidocx.model.ParameterIn;
 import io.apidocx.model.Property;
@@ -9,7 +10,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -55,8 +55,8 @@ public class MarkdownGenerator {
             markdown.append(format("## %d.%s", serialNumber, summary)).append("\n\n");
         }
         markdown.append(format("**路径**: %s %s", api.getMethod().name(), api.getPath())).append("\n\n");
-        if (serialNumber < 0 && !Objects.equals(api.getSummary(), api.getPath())) {
-            markdown.append(format("**描述**: %s", api.getSummary())).append("\n\n");
+        if (StringUtils.isNotEmpty(api.getDescription())) {
+            markdown.append(format("**描述**: %s", api.getDescription())).append("\n\n");
         }
         markdown.append("**请求参数**").append("\n\n");
         markdown.append(getPropertiesSnippets("Headers", api.getParametersByIn(ParameterIn.header)));
@@ -66,8 +66,9 @@ public class MarkdownGenerator {
                 getPropertiesSnippets(api.getRequestBodyType() == RequestBodyType.form_data ? "Form Data" : "Form",
                         api.getRequestBodyForm()));
         markdown.append(getBodySnippets("Body", api.getRequestBody(), true)).append("\n");
-        markdown.append("**响应参数**").append("\n\n");
+        markdown.append("**响应结果**").append("\n\n");
         markdown.append(getBodySnippets("Body", api.getResponses(), true)).append("\n");
+        markdown.append(getBodyDemoSnippets(null, api.getResponses())).append("\n");
         return markdown.toString();
     }
 
@@ -78,11 +79,11 @@ public class MarkdownGenerator {
         StringBuilder markdown = new StringBuilder();
         markdown.append(format("*%s:*", title)).append("\n\n");
         markdown.append("| 名称 | 必选 | 类型 | 默认值 | 描述 |").append("\n");
-        markdown.append("| --- | --- | --- | --- | --- |").append("\n");
+        markdown.append("| --- | :-: | --- | --- | --- |").append("\n");
         properties.forEach(h -> {
             String description = getPropertyDescription(h);
             String hr = formatTable("| %s | %s | %s | %s | %s |",
-                    h.getName(), requiredText(h.getRequired()), h.getTypeWithArray(),
+                    h.getName(), requiredText(h.getRequired()), getPropertyType(h),
                     h.getDefaultValue(), description);
             markdown.append(hr).append("\n");
         });
@@ -101,7 +102,7 @@ public class MarkdownGenerator {
         StringBuilder markdown = new StringBuilder();
         markdown.append(format("*%s:*", title)).append("\n\n");
         markdown.append("| 名称 | 必选 | 类型 | 默认值 | 描述 |").append("\n");
-        markdown.append("| --- | --- | --- | --- | --- |").append("\n");
+        markdown.append("| --- | :-: | --- | --- | --- |").append("\n");
         if (property.isObjectType()) {
             List<Property> propertyList = Optional.ofNullable(property.getProperties())
                     .map(Map::values)
@@ -118,6 +119,21 @@ public class MarkdownGenerator {
         return markdown.toString();
     }
 
+    private String getBodyDemoSnippets(String title, Property property) {
+        if (property == null) {
+            return "";
+        }
+        String jsonExample = PropertyUtils.getJsonExample(property);
+        StringBuilder markdown = new StringBuilder();
+        if (StringUtils.isNotEmpty(title)) {
+            markdown.append(format("*%s:*", title)).append("\n\n");
+        }
+        markdown.append("```json").append("\n");
+        markdown.append(jsonExample).append("\n");
+        markdown.append("```");
+        return markdown.toString();
+    }
+
     private String propertyRowSnippets(Property property, int depth, boolean isLast) {
         String nameDepth = property.getName();
         String tree = isLast ? "└ " : "├ ";
@@ -125,7 +141,7 @@ public class MarkdownGenerator {
             nameDepth = StringUtils.repeat("&nbsp;&nbsp;", depth - 1) + tree + property.getName();
         }
         String row = formatTable("| %s | %s | %s | %s | %s |\n",
-                nameDepth, requiredText(property.getRequired()), property.getTypeWithArray(),
+                nameDepth, requiredText(property.getRequired()), getPropertyType(property),
                 property.getDefaultValue(), getPropertyDescription(property));
         StringBuilder markdown = new StringBuilder(row);
 
@@ -156,6 +172,19 @@ public class MarkdownGenerator {
 
     //----------------------- 辅助方法 ---------------------------//
 
+    private String getPropertyType(Property property) {
+        String type = property.getType();
+        String format = property.getFormat();
+        if ("array".equals(property.getType()) && property.getItems() != null) {
+            type = property.getItems().getType() + "[]";
+            format = property.getItems().getFormat();
+        }
+        if (StringUtils.isNotEmpty(format)) {
+            type = String.format("%s *&lt;%s&gt;*", type, format);
+        }
+        return type;
+    }
+
     private String getPropertyDescription(Property property) {
         return property.getDescriptionMore();
     }
@@ -171,7 +200,7 @@ public class MarkdownGenerator {
     }
 
     private String requiredText(Boolean required) {
-        return Boolean.TRUE.equals(required) ? "是" : "否";
+        return Boolean.TRUE.equals(required) ? "✓" : "-";
     }
 
     private String escapeTable(String value) {

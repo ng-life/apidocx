@@ -98,6 +98,7 @@ public class KernelParser {
             return property;
         }
         property.setType(dataTypeParser.parse(psiType));
+        property.setFormat(dataTypeParser.parseFormat(psiType));
         property.setValues(parseHelper.getTypeValues(psiType));
 
         // 文件类型
@@ -108,7 +109,7 @@ public class KernelParser {
         // Map类型
         if (PsiTypeUtils.isMap(psiType, this.project, this.module) || Object.class.getName().equals(type)) {
             property.setType(DataTypes.OBJECT);
-            doHandleMap(context, property, genericTypes, chains);
+            // doHandleMap(context, property, genericTypes, chains);
             return property;
         }
 
