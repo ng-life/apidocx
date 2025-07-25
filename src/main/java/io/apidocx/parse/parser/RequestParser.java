@@ -156,6 +156,17 @@ public class RequestParser {
                 }
                 dubboParams.add(property);
             }
+            if (!dubboParams.isEmpty()) {
+                Property arrayProperty = new Property();
+                arrayProperty.setType(DataTypes.OBJECT);
+                Map<String, Property> properties = new LinkedHashMap<>();
+                for (int i = 0; i < dubboParams.size(); i++) {
+                    Property property = dubboParams.get(i);
+                    properties.put("param_" + i + "(" + property.getName() + ")", property);
+                }
+                arrayProperty.setProperties(properties);
+                return Collections.singletonList(arrayProperty);
+            }
             return dubboParams;
         }
 

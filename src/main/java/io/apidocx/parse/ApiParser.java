@@ -15,7 +15,6 @@ import com.intellij.psi.search.searches.SuperMethodsSearch;
 import com.intellij.psi.util.MethodSignatureBackedByPsiMethod;
 import io.apidocx.config.ApidocxConfig;
 import io.apidocx.model.Api;
-import io.apidocx.model.RequestBodyType;
 import io.apidocx.parse.constant.DubboConstants;
 import io.apidocx.parse.constant.SpringConstants;
 import io.apidocx.parse.model.ClassApiData;
@@ -32,9 +31,10 @@ import io.apidocx.parse.util.PathUtils;
 import io.apidocx.parse.util.PsiAnnotationUtils;
 import io.apidocx.parse.util.PsiDocCommentUtils;
 import io.apidocx.parse.util.PsiUtils;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -193,6 +193,22 @@ public class ApiParser {
         api.setRequestBodyForm(requestInfo.getRequestBodyForm());
         // 响应信息
         api.setResponses(responseParser.parse(method));
+
+        if (classLevelInfo.isDubboService()) {
+            if (StringUtils.isBlank(api.getDescription())) {
+                api.setDescription("注意：dubbop数组格式参数");
+            } else {
+                api.setDescription("注意：dubbop数组格式参数\n" + api.getDescription());
+            }
+            if (CollectionUtils.isEmpty(api.getTags())) {
+                api.setTags(Collections.singletonList("dubbop"));
+            } else {
+                List<String> tags = new ArrayList<>(api.getTags());
+                tags.add("dubbop");
+                api.setTags(tags);
+            }
+        }
+
         return api;
     }
 
