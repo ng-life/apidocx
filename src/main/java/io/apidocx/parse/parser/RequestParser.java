@@ -150,6 +150,7 @@ public class RequestParser {
             List<Property> dubboParams = Lists.newArrayList();
             for (PsiParameter methodParameter : methodParameters) {
                 Property property = kernelParser.parse(methodParameter.getType());
+                property.setName(methodParameter.getName());
                 String description = paramTags.get(methodParameter.getName());
                 if (StringUtils.isNotEmpty(description)) {
                     property.setDescription(description);
@@ -162,7 +163,8 @@ public class RequestParser {
                 Map<String, Property> properties = new LinkedHashMap<>();
                 for (int i = 0; i < dubboParams.size(); i++) {
                     Property property = dubboParams.get(i);
-                    properties.put("param_" + i + "(" + property.getName() + ")", property);
+                    property.setDefaultValue(property.getName());
+                    properties.put("param_" + i, property);
                 }
                 arrayProperty.setProperties(properties);
                 return Collections.singletonList(arrayProperty);
